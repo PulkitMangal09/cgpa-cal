@@ -106,6 +106,15 @@ body::before{content:'';display:block;height:4px;background:linear-gradient(90de
 .gl-item{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
 .gl-sep{color:var(--rule)}
 
+/* SEARCH INPUT */
+.elec-search-wrap{position:relative;margin-bottom:12px}
+.elec-search{width:100%;background:var(--paper);border:1.5px solid var(--rule);border-radius:3px;color:var(--ink);font-family:'Source Serif 4',serif;font-size:13px;padding:9px 36px 9px 14px;outline:none;transition:border-color .15s}
+.elec-search:focus{border-color:var(--blue)}
+.elec-search::placeholder{color:var(--muted);font-style:italic}
+.elec-search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:13px}
+.elec-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px}
+.course-row.hidden-row{display:none}
+
 /* DIVIDERS */
 .hr{border:none;border-top:1px solid var(--rule);margin:28px 0}
 .hr-double{border:none;border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);height:4px;margin:28px 0}
@@ -313,27 +322,41 @@ const DEG_CORE=[
   {code:'BSGN3001',name:'Strategies for Professional Growth',credits:4},
 ];
 const DEG_ELEC=[
-  {code:'BSCS3005',name:'Programming in C',credits:4},
   {code:'BSBT4001',name:'Algorithmic Thinking in Bioinformatics',credits:4},
+  {code:'BSBT4002',name:'Big Data and Biological Networks',credits:4},
   {code:'BSCS4001',name:'Data Visualization Design',credits:4},
-  {code:'BSMS4002',name:'Design Thinking for Data-Driven App Dev',credits:4},
+  {code:'BSEE4001',name:'Speech Technology',credits:4},
+  {code:'BSMS4002',name:'Design Thinking for Data-Driven App Development',credits:4},
+  {code:'BSMS4001',name:'Industry 4.0',credits:4},
   {code:'BSMS3002',name:'Market Research',credits:4},
   {code:'BSCS4003',name:'Privacy & Security in Online Social Media',credits:4},
+  {code:'BSDA5001',name:'Introduction to Big Data',credits:4},
+  {code:'BSMS4003',name:'Financial Forensics',credits:4},
+  {code:'BSMA3012',name:'Linear Statistical Models',credits:4},
+  {code:'BSCS4021',name:'Advanced Algorithms',credits:4},
+  {code:'BSMA3014',name:'Statistical Computing',credits:4},
   {code:'BSCS3031',name:'Computer Systems Design',credits:4},
-  {code:'BSDA5006',name:'Deep Learning for Computer Vision',credits:4},
+  {code:'BSCS3005',name:'Programming in C',credits:4},
+  {code:'BSMA2001',name:'Mathematical Thinking',credits:4},
   {code:'BSDA5004',name:'Large Language Models',credits:4},
-  {code:'BSMS4023',name:'Game Theory and Strategy',credits:4},
+  {code:'BSDA5005',name:'Introduction to Natural Language Processing (i-NLP)',credits:4},
+  {code:'BSDA5006',name:'Deep Learning for Computer Vision',credits:4},
   {code:'BSMS3033',name:'Managerial Economics',credits:4},
-  {code:'BSDA5014',name:'ML Ops',credits:4},
-  {code:'BSDA5002',name:'Mathematical Foundations of Generative AI',credits:4},
-  {code:'BSDA5003',name:'Algorithms for Data Science',credits:4},
+  {code:'BSMS4023',name:'Game Theory and Strategy',credits:4},
+  {code:'BSMS3034',name:'Corporate Finance',credits:4},
   {code:'BSDA5013',name:'Deep Learning Practice',credits:4},
+  {code:'BSCS4022',name:'Operating Systems',credits:4},
+  {code:'BSDA5002',name:'Mathematical Foundations of Generative AI',credits:4},
+  {code:'BSDA5003',name:'Algorithms for Data Science (ADS)',credits:4},
+  {code:'BSDA5014',name:'Machine Learning Operations (MLOps)',credits:4},
   {code:'BSDA4001',name:'Data Science and AI Lab',credits:4},
   {code:'BSCS4010',name:'Application Development Lab',credits:4},
+  {code:'BSCS4024',name:'Computer Networks',credits:4},
   {code:'BSCS3021',name:'Theory of Computation',credits:4},
-  {code:'BSMA3001',name:'Discrete Mathematics',credits:4},
-  {code:'BSCS4032',name:'Compiler Design',credits:4},
   {code:'BSDA5007',name:'Reinforcement Learning',credits:4},
+  {code:'BSCS4032',name:'Compiler Design',credits:4},
+  {code:'BSMA3001',name:'Discrete Mathematics',credits:4},
+  {code:'BSDA6004',name:'Sequential Decision Making',credits:4},
 ];
 
 let currentLevel=null, dsOpt='1';
@@ -383,7 +406,7 @@ function buildCourses() {
     hr.className='hr-double';
     wrap.appendChild(hr);
     wrap.appendChild(makeBlock('Degree — Core Courses',DEG_CORE,'degree'));
-    wrap.appendChild(makeBlock('Degree — Elective Courses (select applicable)',DEG_ELEC,'degree'));
+    wrap.appendChild(makeSearchableBlock('Degree — Elective Courses (select applicable)',DEG_ELEC,'degree'));
   }
 }
 
@@ -419,6 +442,48 @@ function makeBlock(title,courses,type){
     wrap.appendChild(row);
   });
   return wrap;
+}
+
+function makeSearchableBlock(title,courses,type){
+  const wrap=document.createElement('div');
+  wrap.className='course-block';
+  wrap.id='elec-block';
+  const hdr=document.createElement('div');
+  hdr.className='block-header';
+  hdr.innerHTML=`<span class="block-pill pill-${type}">${type.toUpperCase()}</span><span class="block-title">${title}</span><span class="block-credits" id="elec-cr-label">${courses.length * 4} cr max</span>`;
+  wrap.appendChild(hdr);
+  // Search box
+  const sw=document.createElement('div');
+  sw.className='elec-search-wrap';
+  sw.innerHTML=`<input class="elec-search" id="elec-search" type="text" placeholder="Search courses with name or code..." oninput="filterElectives(this)"><span class="elec-search-icon">⌕</span>`;
+  wrap.appendChild(sw);
+  const countEl=document.createElement('div');
+  countEl.className='elec-count';
+  countEl.id='elec-count';
+  countEl.textContent=`Showing all ${courses.length} electives — select the ones you have completed`;
+  wrap.appendChild(countEl);
+  courses.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='course-row';
+    row.dataset.name=c.name.toLowerCase();
+    row.dataset.code=c.code.toLowerCase();
+    row.innerHTML=`<div><div class="c-name">${c.name}</div><div class="c-code">${c.code}</div></div><div class="c-cr">${c.credits} cr</div><select class="grade-select" id="g-${c.code}" onchange="styleGrade(this)">${GRADE_OPTS.map(g=>`<option value="${g}">${g}</option>`).join('')}</select>`;
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+function filterElectives(input){
+  const q=input.value.toLowerCase().trim();
+  const rows=document.querySelectorAll('#elec-block .course-row');
+  let visible=0;
+  rows.forEach(row=>{
+    const match=!q||row.dataset.name.includes(q)||row.dataset.code.includes(q);
+    row.classList.toggle('hidden-row',!match);
+    if(match) visible++;
+  });
+  const countEl=document.getElementById('elec-count');
+  if(countEl) countEl.textContent=q?`Showing ${visible} of ${rows.length} electives`:`Showing all ${rows.length} electives — select the ones you have completed`;
 }
 
 function styleGrade(sel){
